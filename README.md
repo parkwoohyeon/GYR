@@ -29,6 +29,57 @@ git checkout -b feature/03-job-list-detail-apply-flow
 
 작업 완료 후에는 본인 기능 브랜치에서 `develop-team-integration`으로 PR을 만들고, 테스트 후 `main`에 합칩니다.
 
+### 팀원 작업 방법
+
+1. 처음 참여하는 팀원은 저장소를 복사합니다.
+
+```bash
+git clone https://github.com/parkwoohyeon/GYR.git
+cd GYR
+```
+
+2. 최신 브랜치 목록을 받아옵니다.
+
+```bash
+git fetch --all
+```
+
+3. 본인 담당 브랜치로 이동합니다.
+
+```bash
+git checkout feature/03-job-list-detail-apply-flow
+```
+
+4. 작업 전에는 항상 최신 내용을 가져옵니다.
+
+```bash
+git pull
+```
+
+5. 파일을 수정한 뒤 커밋하고 GitHub에 올립니다.
+
+```bash
+git add .
+git commit -m "작업 내용 요약"
+git push
+```
+
+6. GitHub에서 Pull Request를 만듭니다.
+
+- 기준 브랜치: `develop-team-integration`
+- 비교 브랜치: 본인 담당 `feature/...` 브랜치
+- PR 제목에는 어떤 기능을 수정했는지 짧게 적습니다.
+- PR 설명에는 수정한 파일, 테스트한 내용, 남은 작업을 적습니다.
+
+### 작업 규칙
+
+- `main` 브랜치에는 직접 커밋하지 않습니다.
+- 다른 팀원이 담당한 브랜치에서 작업하지 않습니다.
+- 작업 시작 전 `git pull`을 먼저 실행합니다.
+- 충돌이 나면 혼자 강제로 덮어쓰지 말고 팀원에게 먼저 공유합니다.
+- 기능이 완성되면 바로 `main`이 아니라 `develop-team-integration`으로 PR을 보냅니다.
+- `feature/01-split-files-before-team-work`가 먼저 정리되면, 다른 기능 브랜치는 그 변경 내용을 기준으로 맞춰 작업합니다.
+
 ---
 
 ## 📁 파일 구조
