@@ -4,6 +4,33 @@
 
 ---
 
+## 🌿 브랜치 운영 안내
+
+팀 작업 시에는 `main`에 바로 작업하지 말고, 각자 담당 브랜치에서 작업한 뒤 `develop-team-integration`으로 Pull Request를 보내주세요.
+
+| 브랜치 | 용도 |
+|---|---|
+| `main` | 배포용 안정 브랜치 |
+| `develop-team-integration` | 팀 작업 통합 브랜치 |
+| `feature/01-split-files-before-team-work` | 먼저 파일 구조 쪼개는 작업용 |
+| `feature/02-login-signup-profile-resume` | 로그인, 회원가입, 내 정보, 이력서 |
+| `feature/03-job-list-detail-apply-flow` | 구인공고, 필터, 공고 상세, 지원하기 |
+| `feature/04-safety-education-certificates` | 안전교육, 수료증, 집체교육 |
+| `feature/05-labor-wage-calculator-visa-chatbot` | 노무 서비스, 임금계산기, 챗봇, 비자 안내 |
+| `feature/06-ui-mobile-responsive-polish` | CSS, 모바일 반응형, UI 정리 |
+
+권장 흐름:
+
+```bash
+git checkout develop-team-integration
+git pull
+git checkout -b feature/03-job-list-detail-apply-flow
+```
+
+작업 완료 후에는 본인 기능 브랜치에서 `develop-team-integration`으로 PR을 만들고, 테스트 후 `main`에 합칩니다.
+
+---
+
 ## 📁 파일 구조
 
 ```
