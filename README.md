@@ -1,0 +1,67 @@
+# 🌉 WorkBridge Korea v3
+
+외국인 근로자를 위한 취업·안전교육 플랫폼 (11개 언어 지원)
+
+---
+
+## 📁 파일 구조
+
+```
+workbridge-v3/
+├── index.html          ← 메인 HTML (화면 구조 전체)
+├── README.md           ← 이 파일
+├── css/
+│   └── style.css       ← 디자인·레이아웃
+├── js/
+│   ├── i18n.js         ← 다국어 번역 딕셔너리 + 언어 전환
+│   ├── app.js          ← 앱 핵심 로직
+│   └── chatbot.js      ← AI 챗봇 (Claude API) ⚠️ 수정 금지
+└── data/
+    ├── jobs.js         ← 구인공고 데이터 ★ 자주 수정
+    └── courses.js      ← 안전교육 과목 데이터
+```
+
+---
+
+## ✏️ 자주 하는 수정
+
+### 구인공고 추가/수정
+→ `data/jobs.js` 파일의 `JOBS` 배열 수정
+
+### 번역 텍스트 수정
+→ `js/i18n.js` 파일에서 해당 언어 블록 찾아 값만 수정
+
+### 색상 테마 변경
+→ `css/style.css` 맨 위 `:root { }` 안의 `--primary`, `--secondary` 등 수정
+
+### AI 챗봇 답변 범위 조정
+→ `js/chatbot.js` 의 `SYSTEM_PROMPT` 텍스트 수정  
+→ 최저임금 변경 시: SYSTEM_PROMPT 안 금액 + `app.js`의 `checkMinWage()` 안 `10030` 값 함께 수정
+
+---
+
+## ⚠️ 절대 건드리면 안 되는 것
+
+| 항목 | 이유 |
+|------|------|
+| `js/chatbot.js` 의 `fetch()` 코드 | Claude API 서버 직접 통신. 수정 시 AI 챗봇 작동 안 함 |
+| `localStorage` 키 이름 (`wb_lang`, `wb_session` 등) | 변경 시 저장된 사용자 데이터 사라짐 |
+| `index.html` 의 `id="..."` 속성값 | JS 함수들이 이 id로 요소를 찾음 |
+| `data-i18n="..."` 속성값 | 번역 키와 1:1 대응. 바꾸면 번역 안 됨 |
+| `<script src="...">` 로딩 순서 | 파일 간 의존성 존재 |
+
+---
+
+## 🚀 실행 방법
+
+GitHub Pages, Netlify, Vercel 등에 폴더 통째로 업로드하거나  
+로컬에서는 VS Code의 Live Server 확장으로 실행하세요.
+
+> ⚠️ `index.html`을 브라우저에서 직접 파일로 열면 (`file://`) JS 파일 로딩이 안 될 수 있습니다.  
+> 반드시 웹 서버를 통해 실행하세요.
+
+---
+
+## 🌐 지원 언어
+
+한국어 · 영어 · 베트남어 · 필리핀어 · 우즈베크어 · 크메르어 · 인도네시아어 · 네팔어 · 미얀마어 · 싱할라어 · 태국어

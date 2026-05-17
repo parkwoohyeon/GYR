@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="ko">
+<!--
+=======================================================================
+  WorkBridge Korea v3 — index.html
+  외국인 근로자 취업·안전교육 플랫폼 메인 페이지
+=======================================================================
+
+  📁 프로젝트 파일 구조
+  ──────────────────────────────────────────────────────────────────────
+  index.html          ← 이 파일 (HTML 구조 전체)
+  css/
+    style.css         ← 디자인·레이아웃 (색상, 폰트, 여백 등)
+  js/
+    i18n.js           ← 다국어 번역 딕셔너리 + 언어 전환 함수
+    app.js            ← 앱 핵심 로직 (페이지 전환, 공고, 인증, 계산기 등)
+    chatbot.js        ← AI 챗봇 (Claude API 연동) ⚠️ 수정 금지
+  data/
+    jobs.js           ← 구인공고 데이터 ★ 자주 수정
+    courses.js        ← 안전교육 과목 데이터 ★ 자주 수정
+
+  📝 각 파일에서 무엇을 수정하나요?
+  ──────────────────────────────────────────────────────────────────────
+  공고 추가/수정    → data/jobs.js
+  교육 과목 수정    → data/courses.js
+  번역 텍스트 수정  → js/i18n.js
+  색상·디자인 수정  → css/style.css 의 :root 변수
+  AI 답변 범위 조정 → js/chatbot.js 의 SYSTEM_PROMPT 텍스트
+  페이지 HTML 수정  → 이 파일 (index.html) 직접 수정
+
+  ⚠️ 수정 시 주의 사항
+  ──────────────────────────────────────────────────────────────────────
+  - id="..." 속성값을 바꾸면 JS가 해당 요소를 찾지 못합니다.
+  - data-i18n="키이름" 값을 바꾸면 번역이 적용되지 않습니다.
+  - onclick="함수명()" 함수명을 바꾸면 버튼이 동작하지 않습니다.
+  - 6개의 <script src="..."> 태그 순서를 바꾸지 마세요 (의존성 순서).
+
+  🌐 지원 언어 (11개)
+  ──────────────────────────────────────────────────────────────────────
+  한국어(ko) · 영어(en) · 베트남어(vi) · 필리핀어(tl) · 우즈베크어(uz)
+  크메르어(km) · 인도네시아어(id) · 네팔어(ne) · 미얀마어(my)
+  싱할라어(si) · 태국어(th)
+=======================================================================
+-->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WorkBridge Korea — 외국인 근로자 취업·안전교육 플랫폼</title>
+
+  <!-- ▼ 구글 폰트 — 한국어/다국어 폰트. 인터넷 연결 필요 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- ▼ Font Awesome 6.5 — 아이콘. 인터넷 연결 필요. 버전 바꾸면 아이콘 깨질 수 있음 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <!-- ▼ 스타일시트 — 색상/레이아웃은 여기서 수정 -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+
+<!-- ==============================
+     데스크탑 상단 네비게이션
+============================== -->
+<nav id="desktop-nav">
+  <div class="nav-inner">
+    <div class="nav-logo" onclick="showPage('home')">🌉 WorkBridge Korea</div>
+    <div class="nav-links">
+      <button class="nav-link active" onclick="showPage('home')" data-i18n-nav="home">홈</button>
+      <button class="nav-link" onclick="showPage('jobs')" data-i18n-nav="jobs">일자리 찾기</button>
+      <button class="nav-link" onclick="showPage('edu')" data-i18n-nav="edu">안전교육</button>
+      <button class="nav-link" onclick="showPage('labor')" data-i18n-nav="labor">⚖️ 노무 서비스</button>
+      <button class="nav-link" onclick="showPage('visa')" data-i18n-nav="visa_tab">비자 안내</button>
+      <button class="nav-link" onclick="showPage('profile')" data-i18n-nav="profile_nav">내 정보</button>
+    </div>
+    <div class="nav-actions">
+      <select class="lang-select" id="desktop-lang" onchange="changeLang(this.value)">
+        <option value="ko">🇰🇷 한국어</option>
+        <option value="en">🇺🇸 English</option>
+        <option value="vi">🇻🇳 Tiếng Việt</option>
+        <option value="tl">🇵🇭 TL</option>
+        <option value="uz">🇺🇿 UZ</option>
+        <option value="km">🇰🇭 KM</option>
+        <option value="id">🇮🇩 ID</option>
+        <option value="ne">🇳🇵 NE</option>
+        <option value="my">🇲🇲 MY</option>
+        <option value="si">🇱🇰 SI</option>
+        <option value="th">🇹🇭 TH</option>
+      </select>
+      <span id="desktop-user-name" style="font-size:14px;font-weight:600;color:var(--primary);display:none;"></span>
+      <button class="btn btn-outline btn-sm" id="desktop-login-btn" onclick="openAuthModal('login')" data-i18n="login">로그인</button>
+      <button class="btn btn-primary btn-sm" id="desktop-signup-btn" onclick="openAuthModal('signup')" data-i18n="signup">회원가입</button>
+      <button class="btn btn-outline btn-sm" id="desktop-logout-btn" onclick="logout()" style="display:none;" data-i18n="logout">로그아웃</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ==============================
+     모바일 상단 헤더
+============================== -->
+<header id="mobile-header">
+  <div class="mobile-logo">🌉 WorkBridge</div>
+  <div class="mobile-actions">
+    <select class="mobile-lang" id="mobile-lang" onchange="changeLang(this.value)">
+      <option value="ko">🇰🇷 KO</option>
+      <option value="en">🇺🇸 EN</option>
+      <option value="vi">🇻🇳 VI</option>
+      <option value="tl">🇵🇭 TL</option>
+      <option value="uz">🇺🇿 UZ</option>
+      <option value="km">🇰🇭 KM</option>
+      <option value="id">🇮🇩 ID</option>
+      <option value="ne">🇳🇵 NE</option>
+      <option value="my">🇲🇲 MY</option>
+      <option value="si">🇱🇰 SI</option>
+      <option value="th">🇹🇭 TH</option>
+    </select>
+    <span id="mobile-user-name" style="font-size:12px;font-weight:700;color:#fff;display:none;"></span>
+    <button class="mobile-login-btn" id="mobile-login-btn" onclick="openAuthModal('login')" data-i18n="login">로그인</button>
+    <button class="mobile-login-btn" id="mobile-logout-btn" onclick="logout()" style="display:none;" data-i18n="logout">로그아웃</button>
+  </div>
+</header>
+
+<!-- ==============================
+     [화면 1] 홈
+============================== -->
+<div id="page-home" class="page active">
+
+  <!-- 히어로 -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-badge">🇰🇷 대한민국 외국인 근로자 플랫폼 No.1</div>
+      <h1 id="hero-headline">대한민국 외국인 근로자 100만 명 시대,<br>일자리를 연결합니다</h1>
+      <p class="hero-sub" id="hero-sub">취업 알선 · 안전교육 · 자격증 취득 — 10개 국어 원스톱 플랫폼</p>
+      <div class="hero-btns">
+        <button class="btn btn-hero-primary" onclick="showPage('jobs')" data-i18n="find_jobs">일자리 찾기 →</button>
+        <button class="btn btn-hero-outline" onclick="showPage('profile')" data-i18n="hire_workers">인재 채용하기 →</button>
+      </div>
+
+      <!-- 국가 선택 -->
+      <div class="country-selector">
+        <div class="country-selector-label">🌍 나라를 선택하세요 / Select your country</div>
+        <div class="country-grid" id="country-grid">
+          <button class="country-btn" onclick="selectCountry('vi')" data-country="vi">🇻🇳 베트남</button>
+          <button class="country-btn" onclick="selectCountry('tl')" data-country="tl">🇵🇭 필리핀</button>
+          <button class="country-btn" onclick="selectCountry('uz')" data-country="uz">🇺🇿 우즈베키스탄</button>
+          <button class="country-btn" onclick="selectCountry('km')" data-country="km">🇰🇭 캄보디아</button>
+          <button class="country-btn" onclick="selectCountry('id')" data-country="id">🇮🇩 인도네시아</button>
+          <button class="country-btn" onclick="selectCountry('ne')" data-country="ne">🇳🇵 네팔</button>
+          <button class="country-btn" onclick="selectCountry('my')" data-country="my">🇲🇲 미얀마</button>
+          <button class="country-btn" onclick="selectCountry('si')" data-country="si">🇱🇰 스리랑카</button>
+          <button class="country-btn" onclick="selectCountry('th')" data-country="th">🇹🇭 태국</button>
+          <button class="country-btn" onclick="selectCountry('en')" data-country="en">🇺🇸 영어(기타)</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 통계 배너 -->
+  <div class="container">
+    <div class="stats-banner">
+      <div class="stat-card">
+        <span class="stat-num">128<span style="font-size:18px">건</span></span>
+        <div class="stat-label" data-i18n="stat1">등록 구인공고</div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num">2,340<span style="font-size:18px">명</span></span>
+        <div class="stat-label" data-i18n="stat2">가입 근로자</div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num">87<span style="font-size:18px">개사</span></span>
+        <div class="stat-label" data-i18n="stat3">협력 사업주</div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num">1,205<span style="font-size:18px">명</span></span>
+        <div class="stat-label" data-i18n="stat4">안전교육 이수</div>
+      </div>
+    </div>
+
+    <!-- 특징 -->
+    <div class="section">
+      <div class="section-title" data-i18n="why_us">워크브릿지를 선택하는 이유</div>
+      <div class="section-sub" data-i18n="why_us_sub">취업부터 교육까지, 외국인 근로자를 위한 모든 것</div>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-icon">💼</div>
+          <h3 data-i18n="feat1_title">검증된 구인 공고</h3>
+          <p data-i18n="feat1_desc">사업주 인증 시스템으로 허위 공고를 원천 차단합니다. 투명한 수수료, 표준 계약서를 제공합니다.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🛡️</div>
+          <h3 data-i18n="feat2_title">법정 안전교육 온라인 이수</h3>
+          <p data-i18n="feat2_desc">산업안전보건법 제29조 기준 법정 의무 교육을 모국어로 간편하게 이수할 수 있습니다.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🌐</div>
+          <h3 data-i18n="feat3_title">10개국어 지원</h3>
+          <p data-i18n="feat3_desc">베트남어, 캄보디아어, 우즈베크어 등 10개 국어로 서비스를 이용할 수 있습니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==============================
+     [화면 2] 구인공고
+============================== -->
+<div id="page-jobs" class="page">
+  <div class="container">
+    <div class="page-header">
+      <h2 data-i18n="jobs_title">구인공고</h2>
+      <p data-i18n="jobs_sub">지금 바로 일자리를 찾아보세요</p>
+    </div>
+
+    <!-- 필터 -->
+    <div class="filter-bar">
+      <select id="filter-sector" onchange="filterJobs()" data-i18n-placeholder="filter_sector">
+        <option value="">전체 업종</option>
+        <option value="제조업">제조업</option>
+        <option value="농·축산업">농·축산업</option>
+        <option value="건설업">건설업</option>
+        <option value="어업">어업</option>
+        <option value="음식·숙박">음식·숙박</option>
+      </select>
+      <select id="filter-region" onchange="filterJobs()">
+        <option value="">전체 지역</option>
+        <option value="경기">경기</option>
+        <option value="충남">충남</option>
+        <option value="경남">경남</option>
+        <option value="전남">전남</option>
+        <option value="경북">경북</option>
+        <option value="서울">서울</option>
+      </select>
+      <div class="search-wrap">
+        <input type="text" id="filter-keyword" placeholder="키워드 검색..." oninput="filterJobs()" />
+        <button class="btn btn-primary btn-sm" onclick="filterJobs()" data-i18n="search">검색</button>
+      </div>
+    </div>
+
+    <!-- 공고 목록 -->
+    <div class="jobs-grid" id="jobs-grid"></div>
+    <div id="jobs-empty" class="empty-state" style="display:none;">
+      <span class="emoji">😕</span>
+      <span data-i18n="no_results">조건에 맞는 공고가 없습니다. 필터를 변경해보세요.</span>
+    </div>
+  </div>
+</div>
+
+<!-- ==============================
+     [화면 3] 안전교육
+============================== -->
+<div id="page-edu" class="page">
+  <div class="container">
+    <div class="page-header">
+      <h2 data-i18n="edu_title">안전교육</h2>
+      <p data-i18n="edu_sub">법정 의무 안전교육을 온라인으로 이수하세요</p>
+    </div>
+
+    <!-- 서브탭 -->
+    <div class="edu-sub-tabs">
+      <button class="edu-sub-tab active" onclick="switchEduTab('online', this)">
+        <i class="fas fa-laptop"></i>
+        <span data-i18n="tab_edu_online">온라인 교육</span>
+      </button>
+      <button class="edu-sub-tab" onclick="switchEduTab('cert_guide', this)">
+        <i class="fas fa-certificate"></i>
+        <span data-i18n="safety_cert_tab">이수증 안내</span>
+      </button>
+      <button class="edu-sub-tab" onclick="switchEduTab('group', this)">
+        <i class="fas fa-users"></i>
+        <span data-i18n="tab_edu_group">집체교육</span>
+      </button>
+    </div>
+
+    <!-- 온라인 교육 패널 -->
+    <div class="edu-panel active" id="edu-online">
+      <div class="edu-banner">
+        <h2 data-i18n="edu_banner_title">법정 의무 안전교육을 온라인으로 이수하세요</h2>
+        <p data-i18n="edu_banner_sub">고용노동부 기준 산업안전보건법 제29조 — 사업주 의무 교육 | 수료증 즉시 발급</p>
+      </div>
+      <div class="edu-grid" id="edu-grid"></div>
+    </div>
+
+    <!-- 이수증 안내 패널 -->
+    <div class="edu-panel" id="edu-cert_guide">
+      <div class="cert-guide-header" style="margin-bottom:20px;">
+        <h3 style="font-size:17px;font-weight:800;color:var(--primary);margin-bottom:6px;" data-i18n="safety_cert_title">안전교육 이수증 종류</h3>
+        <p style="font-size:14px;color:var(--text-muted);" data-i18n="safety_cert_sub">법정 의무교육 이수 후 발급되는 이수증 안내</p>
+      </div>
+      <div class="cert-guide-grid">
+        <div class="cert-guide-card">
+          <div class="cert-guide-card-title" data-i18n="cert_basic_name">채용 시 안전보건교육 이수증</div>
+          <div class="cert-guide-card-hours">8시간 이상</div>
+          <div class="cert-guide-card-meta" data-i18n="cert_basic_desc">신규 채용자 필수 / 1회</div>
+          <div style="margin-top:8px;"><span class="badge badge-blue">산안법 제29조</span></div>
+        </div>
+        <div class="cert-guide-card">
+          <div class="cert-guide-card-title" data-i18n="cert_regular_name">정기 안전보건교육 이수증</div>
+          <div class="cert-guide-card-hours">연 16시간</div>
+          <div class="cert-guide-card-meta" data-i18n="cert_regular_desc">분기 1회, 연 16시간 이상</div>
+          <div style="margin-top:8px;"><span class="badge badge-blue">산안법 제29조</span></div>
+        </div>
+        <div class="cert-guide-card">
+          <div class="cert-guide-card-title" data-i18n="cert_special_name">특별 안전보건교육 이수증</div>
+          <div class="cert-guide-card-hours">16시간 이상</div>
+          <div class="cert-guide-card-meta" data-i18n="cert_special_desc">위험 작업 투입 전 / 16시간 이상</div>
+          <div style="margin-top:8px;"><span class="badge badge-blue">산안법 제29조</span></div>
+        </div>
+        <div class="cert-guide-card">
+          <div class="cert-guide-card-title" data-i18n="cert_group_name">집체교육 이수증</div>
+          <div class="cert-guide-card-hours">8시간</div>
+          <div class="cert-guide-card-meta" data-i18n="cert_group_desc">집합교육장 방문 / 8시간</div>
+          <div style="margin-top:8px;"><span class="badge badge-blue">산안법 제29조</span></div>
+        </div>
+        <div class="cert-guide-card">
+          <div class="cert-guide-card-title" data-i18n="cert_online_name">온라인교육 이수증</div>
+          <div class="cert-guide-card-hours">과정별 상이</div>
+          <div class="cert-guide-card-meta" data-i18n="cert_online_desc">WorkBridge 플랫폼 온라인 수료</div>
+          <div style="margin-top:8px;"><span class="badge badge-green">즉시 발급</span></div>
+        </div>
+      </div>
+      <!-- 이수증 발급 절차 타임라인 -->
+      <div class="cert-timeline">
+        <div class="cert-timeline-title" data-i18n="cert_issue_process">📋 이수증 발급 절차</div>
+        <div class="cert-timeline-steps">
+          <div class="cert-timeline-step">
+            <div class="cert-step-dot">1</div>
+            <div class="cert-step-text" data-i18n="cert_process_1">교육 신청 (온라인/집체)</div>
+          </div>
+          <div class="cert-timeline-step">
+            <div class="cert-step-dot">2</div>
+            <div class="cert-step-text" data-i18n="cert_process_2">교육 수료 (온라인: 70% 이상 수강 / 집체: 전일 참석)</div>
+          </div>
+          <div class="cert-timeline-step">
+            <div class="cert-step-dot">3</div>
+            <div class="cert-step-text" data-i18n="cert_process_3">평가 통과 (온라인: 60점 이상)</div>
+          </div>
+          <div class="cert-timeline-step">
+            <div class="cert-step-dot">4</div>
+            <div class="cert-step-text" data-i18n="cert_process_4">이수증 발급 (온라인 즉시 / 집체 현장 발급)</div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-full" onclick="switchEduTab('online', document.querySelector('.edu-sub-tab'))">🎓 <span data-i18n="start_course">온라인 교육 시작하기</span></button>
+    </div>
+
+    <!-- 집체교육 패널 -->
+    <div class="edu-panel" id="edu-group">
+      <div class="edu-banner">
+        <h2 data-i18n="group_edu_title">집체교육 안내</h2>
+        <p data-i18n="group_edu_desc">직접 방문하여 수료하는 집합교육</p>
+      </div>
+      <div class="cert-guide-grid">
+        <div class="cert-guide-card">
+          <div class="cert-guide-card-title">📍 <span data-i18n="group_edu_loc">전국 고용노동부 산하 안전교육기관</span></div>
+          <div style="font-size:13px;color:var(--text-muted);margin-top:8px;" data-i18n="group_edu_hours">1일 8시간 과정</div>
+        </div>
+        <div class="cert-guide-card">
+          <div class="cert-guide-card-title">🌐 <span data-i18n="group_edu_lang">다국어 통역 제공</span></div>
+          <div style="font-size:13px;color:var(--text-muted);margin-top:8px;">베트남어, 중국어, 영어</div>
+        </div>
+        <div class="cert-guide-card">
+          <div class="cert-guide-card-title">📝 <span data-i18n="group_edu_apply">인터넷 원서접수 또는 현장 접수</span></div>
+          <div style="margin-top:10px;"><a href="tel:1350" class="btn btn-primary btn-sm">☎ 고용노동부 1350</a></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ==============================
+     [화면 4] 내 정보 (프로필)
+============================== -->
+<div id="page-profile" class="page">
+  <div class="container">
+    <div class="page-header">
+      <h2 data-i18n="my_info">내 정보</h2>
+    </div>
+
+    <!-- 로그인 안내 (미로그인) -->
+    <div id="not-logged-in">
+      <div class="login-prompt">
+        <i class="fas fa-user-circle"></i>
+        <div class="login-prompt-text">
+          <strong data-i18n="login_to_continue">로그인이 필요합니다</strong>
+          <span data-i18n="login_desc">회원가입 후 이력서 관리, 안전교육 이수 내역을 확인하세요</span>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openAuthModal('login')" data-i18n="login">로그인</button>
+      </div>
+    </div>
+
+    <!-- 로그인 후 프로필 -->
+    <div id="logged-in-profile" style="display:none;">
+      <div class="profile-card">
+        <div class="profile-avatar" id="profile-avatar">👤</div>
+        <div class="profile-name" id="profile-name-disp">—</div>
+        <div class="profile-sub" id="profile-email-disp">—</div>
+        <div style="margin-top:12px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;" id="profile-badges-disp"></div>
+      </div>
+
+      <!-- 수료 내역 -->
+      <div class="section-title" style="margin-bottom:12px;" data-i18n="cert_history">수료 내역</div>
+      <div id="cert-list" class="cert-list">
+        <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;" data-i18n="no_cert">아직 수료한 교육이 없습니다.</div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <div class="profile-menu-item" onclick="logout()">
+          <div class="profile-menu-left"><i class="fas fa-sign-out-alt"></i> <span data-i18n="logout">로그아웃</span></div>
+          <i class="fas fa-chevron-right" style="color:var(--text-muted);font-size:12px;"></i>
+        </div>
+      </div>
+
+      <!-- 이력서 자동번역 섹션 -->
+      <div class="resume-wrap" style="margin-top:24px;">
+        <div class="section-title" style="margin-bottom:16px;">📄 이력서 자동번역</div>
+
+        <div class="resume-form-card">
+          <div class="resume-form-title">📝 이력서 입력</div>
+
+          <div class="form-group">
+            <label class="form-label">입력 언어 선택</label>
+            <select class="form-select" id="resume-lang">
+              <option value="vi">🇻🇳 베트남어</option>
+              <option value="en">🇺🇸 영어</option>
+              <option value="id">🇮🇩 인도네시아어</option>
+              <option value="tl">🇵🇭 필리핀어</option>
+              <option value="uz">🇺🇿 우즈베크어</option>
+              <option value="ne">🇳🇵 네팔어</option>
+              <option value="my">🇲🇲 미얀마어</option>
+              <option value="km">🇰🇭 크메르어</option>
+              <option value="th">🇹🇭 태국어</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">이름</label>
+            <input type="text" class="form-input" id="resume-name" placeholder="이름 입력" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">한국 내 주소</label>
+            <input type="text" class="form-input" id="resume-addr" placeholder="예: 경기도 안산시 단원구" />
+          </div>
+
+          <div class="resume-section-title" style="margin-top:16px;">경력 사항</div>
+          <div id="career-blocks">
+            <div class="career-block">
+              <div class="career-block-header">
+                <span class="career-block-title">경력 1</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">회사명 (현지어)</label>
+                <input type="text" class="form-input career-company" placeholder="회사명" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">직무</label>
+                <input type="text" class="form-input career-role" placeholder="직무명 (현지어)" />
+              </div>
+              <div style="display:flex;gap:8px;">
+                <div class="form-group" style="flex:1;">
+                  <label class="form-label">시작</label>
+                  <input type="month" class="form-input career-from" />
+                </div>
+                <div class="form-group" style="flex:1;">
+                  <label class="form-label">종료</label>
+                  <input type="month" class="form-input career-to" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">주요 업무</label>
+                <input type="text" class="form-input career-desc" placeholder="간단히 입력" />
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-outline btn-sm" style="margin-bottom:16px;" onclick="addCareerBlock()">+ 경력 추가</button>
+
+          <div class="resume-section-title">보유 기술</div>
+          <div class="skill-grid">
+            <label class="skill-check"><input type="checkbox" value="지게차 운전" class="skill-cb"> 지게차 운전</label>
+            <label class="skill-check"><input type="checkbox" value="용접" class="skill-cb"> 용접</label>
+            <label class="skill-check"><input type="checkbox" value="선반 조작" class="skill-cb"> 선반 조작</label>
+            <label class="skill-check"><input type="checkbox" value="프레스 작업" class="skill-cb"> 프레스 작업</label>
+            <label class="skill-check"><input type="checkbox" value="봉제" class="skill-cb"> 봉제</label>
+            <label class="skill-check"><input type="checkbox" value="농기계 운전" class="skill-cb"> 농기계 운전</label>
+            <label class="skill-check"><input type="checkbox" value="어획물 가공" class="skill-cb"> 어획물 가공</label>
+            <label class="skill-check"><input type="checkbox" value="한국어(초급)" class="skill-cb"> 한국어(초급)</label>
+            <label class="skill-check"><input type="checkbox" value="컴퓨터 기초" class="skill-cb"> 컴퓨터 기초</label>
+          </div>
+
+          <div class="resume-section-title" style="margin-top:14px;">자격증</div>
+          <div id="cert-inputs" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;"></div>
+          <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <input type="text" class="form-input" id="cert-input-new" placeholder="자격증명 입력" style="flex:1;" />
+            <button class="btn btn-outline btn-sm" onclick="addCertInput()">추가</button>
+          </div>
+
+          <button class="btn btn-primary btn-full" style="font-size:15px;padding:14px;" onclick="generateResume()">📄 이력서 생성하기</button>
+        </div>
+
+        <!-- 이력서 미리보기 -->
+        <div id="resume-preview-wrap" style="display:none;">
+          <div class="resume-preview" id="resume-print-area">
+            <div class="resume-preview-header">
+              <div class="resume-preview-title">이 력 서</div>
+              <div class="resume-preview-subtitle">Resume — WorkBridge Korea</div>
+            </div>
+            <table class="resume-info-table" id="resume-info-table"></table>
+            <div class="resume-section-header">경 력 사 항</div>
+            <div id="resume-career-list"></div>
+            <div class="resume-section-header">보 유 기 술</div>
+            <div class="resume-skill-wrap" id="resume-skills"></div>
+            <div class="resume-section-header">자 격 증</div>
+            <div class="resume-skill-wrap" id="resume-certs-out"></div>
+            <div class="resume-footer" id="resume-footer"></div>
+          </div>
+          <div class="resume-actions">
+            <button class="btn btn-outline btn-sm" onclick="copyResume()">📋 복사</button>
+            <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ 인쇄</button>
+            <button class="btn btn-primary btn-sm" onclick="saveResume()">💾 저장</button>
+          </div>
+        </div>
+      </div><!-- /.resume-wrap -->
+    </div><!-- /#logged-in-profile -->
+  </div><!-- /.container -->
+</div><!-- /#page-profile -->
+
+<!-- ==============================
+     하단 탭 네비게이션 (모바일)
+============================== -->
+<nav id="bottom-nav">
+  <button class="bottom-tab active" onclick="showPage('home')" id="tab-home">
+    <i class="fas fa-home"></i>
+    <span data-i18n="tab_home">홈</span>
+  </button>
+  <button class="bottom-tab" onclick="showPage('jobs')" id="tab-jobs">
+    <i class="fas fa-briefcase"></i>
+    <span data-i18n="tab_jobs">일자리</span>
+  </button>
+  <button class="bottom-tab" onclick="showPage('edu')" id="tab-edu">
+    <i class="fas fa-book-open"></i>
+    <span data-i18n="tab_edu">안전교육</span>
+  </button>
+  <button class="bottom-tab" onclick="showPage('labor')" id="tab-labor">
+    <i class="fas fa-balance-scale"></i>
+    <span data-i18n="tab_labor">노무</span>
+  </button>
+  <button class="bottom-tab" onclick="showPage('visa')" id="tab-visa">
+    <i class="fas fa-id-card"></i>
+    <span data-i18n="visa_tab">비자</span>
+  </button>
+  <button class="bottom-tab" onclick="showPage('profile')" id="tab-profile">
+    <i class="fas fa-user"></i>
+    <span data-i18n="tab_profile">내 정보</span>
+  </button>
+</nav>
+
+<!-- ==============================
+     [화면 5] 노무 서비스
+============================== -->
+<div id="page-labor" class="page">
+  <div class="container">
+    <div class="page-header">
+      <h2>⚖️ <span data-i18n="labor_title">노무 서비스</span></h2>
+      <p data-i18n="labor_sub">근로계약·임금계산·무료 노무상담</p>
+    </div>
+
+    <div class="labor-sub-tabs">
+      <button class="labor-sub-tab active" onclick="switchLaborTab('contract', this)">📄 <span data-i18n="tab_contract">근로계약</span></button>
+      <button class="labor-sub-tab" onclick="switchLaborTab('calc', this)">💰 <span data-i18n="tab_calc">임금계산기</span></button>
+      <button class="labor-sub-tab" onclick="switchLaborTab('consult', this)">⚖️ <span data-i18n="tab_consult">노무상담</span></button>
+      <button class="labor-sub-tab" onclick="switchLaborTab('chatbot', this)">🤖 <span data-i18n="chatbot_title">AI 상담</span></button>
+    </div>
+
+    <!-- 탭 A: 근로계약 -->
+    <div class="labor-panel active" id="labor-contract">
+      <div class="labor-banner">
+        <h2>📄 근로계약서, 제대로 알고 서명하세요</h2>
+        <p>표준 근로계약서 확인 + 핵심 조항 설명</p>
+      </div>
+
+      <div class="checklist-card">
+        <div class="checklist-title">✅ 계약서 체크리스트</div>
+        <div class="checklist-item" onclick="toggleCheck(this)">
+          <div class="checklist-checkbox"></div>
+          <span>💰 임금(월급) 금액이 명시되어 있나요?</span>
+        </div>
+        <div class="checklist-item" onclick="toggleCheck(this)">
+          <div class="checklist-checkbox"></div>
+          <span>📅 근무 시작일과 계약기간이 적혀있나요?</span>
+        </div>
+        <div class="checklist-item" onclick="toggleCheck(this)">
+          <div class="checklist-checkbox"></div>
+          <span>🏭 근무 장소와 업무 내용이 구체적인가요?</span>
+        </div>
+        <div class="checklist-item" onclick="toggleCheck(this)">
+          <div class="checklist-checkbox"></div>
+          <span>⏰ 주휴수당 / 연장근로 조건이 있나요?</span>
+        </div>
+        <div class="checklist-item" onclick="toggleCheck(this)">
+          <div class="checklist-checkbox"></div>
+          <span>🏦 퇴직금 조항이 포함되어 있나요?</span>
+        </div>
+        <div class="checklist-complete-banner" id="checklist-done">✅ 계약서 검토 완료! 안심하고 서명하세요.</div>
+      </div>
+
+      <div class="rights-grid">
+        <div class="rights-card">
+          <div class="rights-card-icon">💰</div>
+          <div class="rights-card-title">최저임금</div>
+          <div class="rights-card-body">
+            2025년 최저임금<br>
+            <span class="rights-card-highlight">시간당 10,030원</span><br>
+            월 환산(209시간)<br>
+            <span class="rights-card-highlight">2,096,270원</span>
+          </div>
+        </div>
+        <div class="rights-card">
+          <div class="rights-card-icon">⏰</div>
+          <div class="rights-card-title">근로시간</div>
+          <div class="rights-card-body">
+            법정근로: <span class="rights-card-highlight">주 40시간</span><br>
+            연장근로: <span class="rights-card-highlight">주 12시간 한도</span><br>
+            초과 시 가산수당 <span class="rights-card-highlight">50%</span>
+          </div>
+        </div>
+        <div class="rights-card">
+          <div class="rights-card-icon">🏖️</div>
+          <div class="rights-card-title">휴가·휴일</div>
+          <div class="rights-card-body">
+            주휴일: <span class="rights-card-highlight">주 1회 유급</span><br>
+            (15시간 이상 근무 시)<br>
+            연차: 1년 근무 시 <span class="rights-card-highlight">15일</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="tel:1350" class="btn btn-primary btn-sm">📞 고용노동부 신고하기 (1350)</a>
+        <button class="btn btn-outline btn-sm" onclick="switchLaborTab('consult')">💬 무료 노무 상담 받기</button>
+      </div>
+    </div>
+
+    <!-- 탭 B: 임금계산기 -->
+    <div class="labor-panel" id="labor-calc">
+      <div class="calc-card">
+        <div class="calc-title">💰 내 월급 계산기</div>
+        <div class="calc-grid">
+          <div class="calc-group">
+            <label class="calc-label">시간당 임금 (원)</label>
+            <input type="number" class="calc-input" id="c-hourly" value="10030" oninput="checkMinWage()" />
+          </div>
+          <div class="calc-group">
+            <label class="calc-label">일 근무시간</label>
+            <input type="number" class="calc-input" id="c-hours" value="8" />
+          </div>
+          <div class="calc-group">
+            <label class="calc-label">월 근무일수</label>
+            <input type="number" class="calc-input" id="c-days" value="22" />
+          </div>
+          <div class="calc-group">
+            <label class="calc-label">연장근무 (시간/월)</label>
+            <input type="number" class="calc-input" id="c-extra" value="0" />
+          </div>
+          <div class="calc-group">
+            <label class="calc-label">야간근무 (시간/월)</label>
+            <input type="number" class="calc-input" id="c-night" value="0" />
+          </div>
+          <div class="calc-group">
+            <label class="calc-label">휴일근무 (시간/월)</label>
+            <input type="number" class="calc-input" id="c-holiday" value="0" />
+          </div>
+        </div>
+        <div class="calc-warn-banner" id="calc-warn">
+          ⚠️ 입력하신 금액은 2025년 최저임금(10,030원)보다 낮습니다. 사업주에게 확인하세요.
+        </div>
+        <button class="btn btn-primary btn-full" style="margin-top:14px;background:var(--labor);border-color:var(--labor);" onclick="calcSalary()">계산하기</button>
+      </div>
+
+      <div class="result-card" id="calc-result" style="display:none;">
+        <div class="result-title">📊 예상 급여 내역</div>
+        <div class="result-row"><span>기본급</span><span id="r-base">—</span></div>
+        <div class="result-row"><span>연장근로 수당 (×1.5)</span><span id="r-extra">—</span></div>
+        <div class="result-row"><span>야간근로 수당 (×0.5)</span><span id="r-night">—</span></div>
+        <div class="result-row"><span>휴일근로 수당 (×1.5)</span><span id="r-holiday">—</span></div>
+        <div class="result-row"><span>주휴수당</span><span id="r-weekly">—</span></div>
+        <div class="result-row total"><span>💵 세전 월 예상 급여</span><span id="r-gross">—</span></div>
+        <div class="result-row" style="font-size:12px;color:var(--text-muted);"><span>4대보험 공제 (~9.4%)</span><span id="r-deduct">—</span></div>
+        <div class="result-row net"><span>🏦 세후 실수령액</span><span id="r-net">—</span></div>
+        <button class="btn btn-outline btn-sm" style="margin-top:12px;" onclick="copyCalcResult()">📋 결과 복사하기</button>
+      </div>
+    </div>
+
+    <!-- 탭 C: 노무상담 -->
+    <div class="labor-panel" id="labor-consult">
+      <div class="chatbot-wrap">
+        <div class="chatbot-header">
+          <h3>⚖️ AI 노무 상담</h3>
+          <p>24시간 무료 상담 (AI 기반 답변)</p>
+        </div>
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="quick-btns">
+          <button class="quick-btn" onclick="sendQuick('임금체불')">임금 체불</button>
+          <button class="quick-btn" onclick="sendQuick('부당해고')">부당해고</button>
+          <button class="quick-btn" onclick="sendQuick('산재')">산재</button>
+          <button class="quick-btn" onclick="sendQuick('초과근무')">초과근무</button>
+          <button class="quick-btn" onclick="sendQuick('계약해지')">계약해지</button>
+          <button class="quick-btn" onclick="sendQuick('비자')">비자</button>
+        </div>
+        <div class="chat-input-row">
+          <input type="text" class="chat-input" id="chat-input" placeholder="질문을 입력하세요..." onkeydown="if(event.key==='Enter')sendChat()" />
+          <button class="chat-send" onclick="sendChat()">전송</button>
+        </div>
+      </div>
+
+      <div class="emergency-contacts">
+        <div class="emergency-title">🚨 긴급 연락처</div>
+        <div class="emergency-item">
+          <span>📞 고용노동부 외국인 근로자 상담</span>
+          <a href="tel:1350" class="emergency-phone">☎ 1350</a>
+        </div>
+        <div class="emergency-item">
+          <span>📞 근로복지공단 산재신청</span>
+          <a href="tel:15880075" class="emergency-phone">☎ 1588-0075</a>
+        </div>
+        <div class="emergency-item">
+          <span>📞 출입국·외국인청</span>
+          <a href="tel:1345" class="emergency-phone">☎ 1345</a>
+        </div>
+        <div class="emergency-item">
+          <span>📞 법률구조공단 무료법률상담</span>
+          <a href="tel:132" class="emergency-phone">☎ 132</a>
+        </div>
+      </div>
+    </div><!-- /#labor-consult -->
+
+    <!-- 탭 D: AI 챗봇 -->
+    <div class="labor-panel" id="labor-chatbot">
+      <div class="chatbot-container">
+        <div class="chatbot-header-new">
+          <div class="chatbot-title-new">
+            <span class="chatbot-icon-new">🤖</span>
+            <span data-i18n="chatbot_title">노무 AI 상담</span>
+          </div>
+          <button class="chatbot-clear-btn" onclick="clearChatbot()" data-i18n="chatbot_clear">초기화</button>
+        </div>
+        <div class="chatbot-messages" id="chatbot-messages">
+          <div class="chatbot-msg bot">
+            <div class="chatbot-bubble" data-i18n="chatbot_welcome">안녕하세요! 노무 관련 질문을 모국어로 입력하면 같은 언어로 답변드립니다.</div>
+          </div>
+        </div>
+        <div class="chatbot-input-area">
+          <textarea id="chatbot-input" class="chatbot-textarea" data-i18n-placeholder="chatbot_placeholder" placeholder="질문을 입력하세요 (모국어 가능)" rows="2" onkeydown="handleChatKey(event)"></textarea>
+          <button class="chatbot-send-btn" onclick="sendChatMessage()" id="chatbot-send-btn">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+        <div class="chatbot-lang-hint" id="chatbot-lang-hint"></div>
+      </div>
+    </div><!-- /#labor-chatbot -->
+
+  </div><!-- /.container -->
+</div><!-- /#page-labor -->
+
+<!-- ==============================
+     [화면 6] 비자 안내
+============================== -->
+<div id="page-visa" class="page">
+  <div class="container">
+    <div class="page-header">
+      <h2 data-i18n="visa_title">외국인 근로자 비자 종류</h2>
+      <p data-i18n="visa_sub">취업 비자 종류별 안내 및 신청 방법</p>
+    </div>
+
+    <div class="visa-banner">
+      <div class="visa-banner-inner">
+        <div>
+          <div style="font-size:28px;margin-bottom:6px;">🇰🇷</div>
+          <div style="font-size:16px;font-weight:700;" data-i18n="visa_title">외국인 근로자 비자 종류</div>
+          <div style="font-size:13px;opacity:.85;margin-top:4px;" data-i18n="visa_sub">취업 비자 종류별 안내 및 신청 방법</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="visa-cards-grid">
+      <!-- E-9 카드 -->
+      <div class="visa-card">
+        <div class="visa-card-code">E-9</div>
+        <div class="visa-card-name" data-i18n="visa_e9_name">비전문취업</div>
+        <div class="visa-card-desc" data-i18n="visa_e9_desc">제조업·농업·어업·건설업 등 비전문 분야</div>
+        <div class="visa-info-row">
+          <i class="fas fa-calendar-alt"></i>
+          <span data-i18n="visa_e9_period">최대 4년 10개월 (재고용 시 추가 연장)</span>
+        </div>
+        <div class="visa-info-row">
+          <i class="fas fa-clipboard-list"></i>
+          <span data-i18n="visa_e9_req">고용허가서, 표준근로계약서, 건강진단서</span>
+        </div>
+      </div>
+      <!-- E-7 카드 -->
+      <div class="visa-card">
+        <div class="visa-card-code">E-7</div>
+        <div class="visa-card-name" data-i18n="visa_e7_name">특정활동</div>
+        <div class="visa-card-desc" data-i18n="visa_e7_desc">전문 기술직·특수 직종</div>
+        <div class="visa-info-row">
+          <i class="fas fa-calendar-alt"></i>
+          <span data-i18n="visa_e7_period">1년 (갱신 가능)</span>
+        </div>
+        <div class="visa-info-row">
+          <i class="fas fa-clipboard-list"></i>
+          <span data-i18n="visa_e7_req">고용계약서, 학위·자격증 증명</span>
+        </div>
+      </div>
+      <!-- H-2 카드 -->
+      <div class="visa-card">
+        <div class="visa-card-code">H-2</div>
+        <div class="visa-card-name" data-i18n="visa_h2_name">방문취업</div>
+        <div class="visa-card-desc" data-i18n="visa_h2_desc">재외동포(중국·구소련) 대상 취업 허용</div>
+        <div class="visa-info-row">
+          <i class="fas fa-calendar-alt"></i>
+          <span data-i18n="visa_h2_period">최대 3년</span>
+        </div>
+        <div class="visa-info-row">
+          <i class="fas fa-clipboard-list"></i>
+          <span data-i18n="visa_h2_req">재외동포 확인서, 취업교육 이수증</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="visa-renew-card">
+      <div style="font-size:15px;font-weight:700;margin-bottom:8px;" data-i18n="visa_renew">🔄 비자 갱신 안내</div>
+      <div style="font-size:13px;line-height:1.7;" data-i18n="visa_renew_desc">만료 2개월 전 출입국관리사무소 방문 신청</div>
+    </div>
+
+    <div class="visa-warning-box" data-i18n="visa_fine">⚠️ 불법 체류 시 강제출국 및 재입국 금지</div>
+  </div>
+</div>
+
+<!-- ==============================
+     공고 로그인 유도 모달
+============================== -->
+<div class="job-modal-overlay" id="job-login-modal">
+  <div class="job-modal">
+    <div class="job-modal-header">
+      <span class="job-modal-title">🔒 로그인 후 공고 확인</span>
+      <button class="job-modal-close" onclick="closeJobModal()">✕</button>
+    </div>
+    <div class="login-prompt-box">
+      <div class="lock-icon">🔒</div>
+      <h3>공고 전체 내용을 보려면 로그인하세요</h3>
+      <p id="jm-company-preview">회사 정보를 확인하려면 로그인이 필요합니다</p>
+    </div>
+    <ul class="benefit-list">
+      <li>공고 상세 정보 (연락처, 담당자) 확인</li>
+      <li>1클릭 지원서 제출</li>
+      <li>안전교육 이수 내역 연동</li>
+      <li>맞춤 공고 알림 설정</li>
+    </ul>
+    <button class="btn btn-primary btn-full" onclick="closeJobModal();openAuthModal('login')">로그인하기</button>
+    <button class="btn btn-outline btn-full" style="margin-top:8px;" onclick="closeJobModal();openAuthModal('signup')">회원가입하기</button>
+    <button style="display:block;width:100%;text-align:center;margin-top:10px;font-size:13px;color:var(--text-muted);background:none;border:none;cursor:pointer;" onclick="closeJobModal()">나중에 보기</button>
+  </div>
+</div>
+
+<!-- ==============================
+     공고 상세 모달 (로그인 후)
+============================== -->
+<div class="job-modal-overlay" id="job-detail-modal">
+  <div class="job-modal">
+    <div class="job-modal-header">
+      <span class="job-modal-title">← 공고 상세</span>
+      <button class="job-modal-close" onclick="closeJobDetailModal()">✕</button>
+    </div>
+    <div id="job-detail-content"></div>
+  </div>
+</div>
+
+<!-- ==============================
+     교육 수강 모달
+============================== -->
+<div class="modal-overlay" id="edu-modal">
+  <div class="modal">
+    <h3 id="edu-modal-title">제조업 기초 안전교육</h3>
+    <p class="modal-sub" id="edu-modal-sub">수강 중... 잠시 기다려주세요.</p>
+    <div class="modal-progress-wrap">
+      <div class="modal-progress-text" id="edu-modal-pct">0%</div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="edu-modal-bar" style="width:0%"></div>
+      </div>
+    </div>
+    <button class="modal-close" id="edu-modal-close" onclick="closeEduModal()" disabled>닫기</button>
+  </div>
+</div>
+
+<!-- ==============================
+     회원가입 / 로그인 모달
+============================== -->
+<div class="modal-overlay" id="auth-modal">
+  <div class="modal" style="max-width:480px;max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <span style="font-size:18px;font-weight:800;color:var(--primary);">🌉 WorkBridge Korea</span>
+      <button onclick="closeAuthModal()" style="background:none;font-size:20px;color:var(--text-muted);">✕</button>
+    </div>
+
+    <!-- 로그인/회원가입 탭 -->
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="auth-tab-login" onclick="switchAuthTab('login')" data-i18n="login">로그인</button>
+      <button class="auth-tab" id="auth-tab-signup" onclick="switchAuthTab('signup')" data-i18n="signup">회원가입</button>
+    </div>
+
+    <!-- 로그인 폼 -->
+    <div id="login-form-wrap">
+      <div class="form-group">
+        <label class="form-label">이메일</label>
+        <input type="email" class="form-input" id="login-email" placeholder="이메일 입력" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">비밀번호</label>
+        <input type="password" class="form-input" id="login-pw" placeholder="비밀번호 입력" />
+        <div class="form-error" id="login-error">이메일 또는 비밀번호가 일치하지 않습니다.</div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="doLogin()" data-i18n="login">로그인</button>
+      <p style="text-align:center;font-size:13px;color:var(--text-muted);margin-top:12px;">
+        계정이 없으신가요? <a href="#" onclick="switchAuthTab('signup')" style="color:var(--secondary);font-weight:600;">회원가입</a>
+      </p>
+    </div>
+
+    <!-- 회원가입 폼 -->
+    <div id="signup-form-wrap" style="display:none;">
+      <!-- 유형 탭 -->
+      <div class="auth-type-tabs">
+        <button class="auth-type-tab active" id="type-worker" onclick="switchUserType('worker')">
+          👷 근로자로 가입
+        </button>
+        <button class="auth-type-tab" id="type-employer" onclick="switchUserType('employer')">
+          🏢 사업주로 가입
+        </button>
+      </div>
+
+      <!-- 근로자 폼 -->
+      <div id="worker-form">
+        <div class="form-group">
+          <label class="form-label">이름</label>
+          <input type="text" class="form-input" id="w-name" placeholder="이름 입력" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">국적</label>
+          <select class="form-select" id="w-nation">
+            <option value="">선택</option>
+            <option>베트남</option><option>필리핀</option><option>우즈베키스탄</option>
+            <option>캄보디아</option><option>인도네시아</option><option>네팔</option>
+            <option>미얀마</option><option>기타</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">비자 종류</label>
+          <select class="form-select" id="w-visa">
+            <option value="">선택</option>
+            <option>E-9</option><option>H-2</option><option>F-4</option><option>F-6</option><option>기타</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">희망 업종</label>
+          <select class="form-select" id="w-sector">
+            <option value="">선택</option>
+            <option>제조업</option><option>농·축산업</option><option>건설업</option>
+            <option>어업</option><option>음식·숙박</option><option>서비스업</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">희망 지역</label>
+          <select class="form-select" id="w-region">
+            <option value="">선택</option>
+            <option>경기</option><option>충남</option><option>경남</option>
+            <option>전남</option><option>경북</option><option>서울</option><option>기타</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">이메일</label>
+          <input type="email" class="form-input" id="w-email" placeholder="이메일 입력" />
+          <div class="form-error" id="w-email-error">이미 가입된 이메일입니다.</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">비밀번호</label>
+          <input type="password" class="form-input" id="w-pw" placeholder="비밀번호 입력 (6자 이상)" />
+        </div>
+        <button class="btn btn-primary btn-full" onclick="doSignup('worker')" data-i18n="signup">가입하기</button>
+      </div>
+
+      <!-- 사업주 폼 -->
+      <div id="employer-form" style="display:none;">
+        <div class="form-group">
+          <label class="form-label">회사명</label>
+          <input type="text" class="form-input" id="e-company" placeholder="회사명 입력" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">사업자등록번호</label>
+          <input type="text" class="form-input" id="e-bizno" placeholder="000-00-00000" maxlength="12" oninput="formatBizNo(this)" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">업종</label>
+          <select class="form-select" id="e-sector">
+            <option value="">선택</option>
+            <option>제조업</option><option>농·축산업</option><option>건설업</option>
+            <option>어업</option><option>음식·숙박</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">소재지</label>
+          <select class="form-select" id="e-region">
+            <option value="">선택</option>
+            <option>서울</option><option>경기</option><option>충남</option>
+            <option>경남</option><option>전남</option><option>경북</option><option>기타</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">담당자명</label>
+          <input type="text" class="form-input" id="e-manager" placeholder="담당자명 입력" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">이메일</label>
+          <input type="email" class="form-input" id="e-email" placeholder="이메일 입력" />
+          <div class="form-error" id="e-email-error">이미 가입된 이메일입니다.</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">비밀번호</label>
+          <input type="password" class="form-input" id="e-pw" placeholder="비밀번호 입력 (6자 이상)" />
+        </div>
+        <button class="btn btn-primary btn-full" onclick="doSignup('employer')" data-i18n="signup">가입하기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 토스트 컨테이너 -->
+<div id="toast-container"></div>
+
+
+
+<!-- ======================================================================
+     JavaScript 파일 로딩
+     ⚠️ 순서를 바꾸지 마세요 — 파일 간 의존성이 있습니다.
+     1. data 파일 먼저 (JOBS, COURSES 변수 선언)
+     2. i18n (i18n 딕셔너리, t() 함수 선언)
+     3. app (renderJobCards 등 — JOBS, i18n 필요)
+     4. chatbot (sendChatMessage — app의 showToast 필요)
+====================================================================== -->
+<script src="data/jobs.js"></script>
+<script src="data/courses.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/app.js"></script>
+<script src="js/chatbot.js"></script>
+
+</body>
+</html>
